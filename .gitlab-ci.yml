@@ -2,35 +2,36 @@ stages:
   - test
 
 variables:
-  MYSQL_DATABASE: lab2_books
-  MYSQL_ROOT_PASSWORD: rootpass
-  MYSQL_HOST: mysql
-  MYSQL_PORT: "3306"
-  DB_HOST: mysql
-  DB_PORT: "3306"
-  DB_USER: root
-  DB_PASSWORD: rootpass
+  POSTGRES_DB: lab2_books
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_USER: postgres
+  DB_PASSWORD: postgres
   DB_NAME: lab2_books
+  DB_SSLMODE: disable
 
-test_with_mysql_and_migrations:
+test_with_postgres_and_migrations:
   stage: test
   image: python:3.11
   services:
-    - name: mysql:8.0
-      alias: mysql
+    - name: postgres:16
+      alias: postgres
   before_script:
-    - apt-get update && apt-get install -y default-mysql-client
+    - apt-get update && apt-get install -y postgresql-client
     - python -m pip install --upgrade pip
     - pip install -r requirements.txt
     - |
       for i in $(seq 1 60); do
-        mysqladmin ping -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -uroot -p"${MYSQL_ROOT_PASSWORD}" --silent && break
-        echo "Waiting for MySQL to be ready..."
+        PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "SELECT 1;" && break
+        echo "Waiting for PostgreSQL to be ready..."
         sleep 2
       done
-    - mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -uroot -p"${MYSQL_ROOT_PASSWORD}" -e "CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};"
-    - mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < migrations/001_create_tables.sql
-    - mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < migrations/002_add_book_numeric_fields.sql
-    - mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < migrations/003_seed_books.sql
+    - PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -f migrations/001_create_tables.sql
+    - PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -f migrations/002_add_book_numeric_fields.sql
+    - PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -f migrations/003_seed_books.sql
   script:
     - python -m pytest -q

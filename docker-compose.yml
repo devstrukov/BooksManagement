@@ -1,19 +1,18 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: lab2-mysql
+  postgres:
+    image: postgres:16
+    container_name: lab2-postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: lab2_books
-      MYSQL_USER: root_user
-      MYSQL_PASSWORD: root
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_DB: lab2_books
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lab2_books"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -25,16 +24,16 @@ services:
     container_name: lab2-api
     restart: unless-stopped
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: root_user
-      DB_PASSWORD: root
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
       DB_NAME: lab2_books
     ports:
       - "5000:5000"
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
 volumes:
-  mysql_data:
+  postgres_data:

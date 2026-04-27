@@ -6,10 +6,14 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python scripts/migrate.py && gunicorn "app:create_default_app()" --bind 0.0.0.0:$PORT
     envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSLMODE
+        value: require
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        value: "3306"
+        value: "5432"
       - key: DB_USER
         sync: false
       - key: DB_PASSWORD
