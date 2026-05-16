@@ -91,7 +91,7 @@ def create_app(book_service: BookService) -> Flask:
     @app.put("/books/<int:book_id>")
     def update_book(book_id: int):
         """
-        Update existing book.
+        Update existing book (partial update supported).
         ---
         consumes:
           - application/json
@@ -106,7 +106,22 @@ def create_app(book_service: BookService) -> Flask:
             required: true
             schema:
               type: object
-              required: [title, description, link, author, price, pages, rating]
+              description: Any subset of book fields to update.
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                link:
+                  type: string
+                author:
+                  type: string
+                price:
+                  type: number
+                pages:
+                  type: integer
+                rating:
+                  type: number
         responses:
           200:
             description: Book updated.

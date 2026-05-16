@@ -7,6 +7,9 @@ from repositories.book_repository import BookRepository
 
 
 class BookService:
+    _UPDATABLE_FIELDS = frozenset(
+        {"title", "description", "link", "author", "price", "pages", "rating"}
+    )
     _ALLOWED_SORT_FIELDS = {
         "id",
         "title",
@@ -57,13 +60,40 @@ class BookService:
         return self._serialize_book(book)
 
     def update_book(self, book_id: int, payload: dict[str, Any]) -> dict[str, Any] | None:
-        title = self._extract_non_empty_string(payload, "title")
-        description = self._extract_non_empty_string(payload, "description")
-        link = self._extract_non_empty_string(payload, "link")
-        author = self._extract_non_empty_string(payload, "author")
-        price = self._extract_positive_float(payload, "price")
-        pages = self._extract_positive_int(payload, "pages")
-        rating = self._extract_float_in_range(payload, "rating", min_value=0.0, max_value=10.0)
+        current = self._book_repository.get_book_by_id(book_id)
+        if current is None:
+            return None
+
+        fields_to_update = set(payload.keys()) & self._UPDATABLE_FIELDS
+        unknown_fields = set(payload.keys()) - self._UPDATABLE_FIELDS
+        if unknown_fields:
+            unknown = ", ".join(sorted(unknown_fields))
+            raise ValueError(f"Unknown field(s): {unknown}")
+        if not fields_to_update:
+            raise ValueError("At least one updatable field must be provided")
+
+        title = current.title
+        description = current.description
+        link = current.link
+        author = current.author
+        price = current.price
+        pages = current.pages
+        rating = current.rating
+
+        if "title" in payload:
+            title = self._extract_non_empty_string(payload, "title")
+        if "description" in payload:
+            description = self._extract_non_empty_string(payload, "description")
+        if "link" in payload:
+            link = self._extract_non_empty_string(payload, "link")
+        if "author" in payload:
+            author = self._extract_non_empty_string(payload, "author")
+        if "price" in payload:
+            price = self._extract_positive_float(payload, "price")
+        if "pages" in payload:
+            pages = self._extract_positive_int(payload, "pages")
+        if "rating" in payload:
+            rating = self._extract_float_in_range(payload, "rating", min_value=0.0, max_value=10.0)
 
         book = self._book_repository.update_book(
             book_id=book_id,

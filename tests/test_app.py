@@ -249,3 +249,52 @@ def test_update_book_updates_values(client):
     assert fetched["price"] == update_payload["price"]
     assert fetched["pages"] == update_payload["pages"]
     assert fetched["rating"] == update_payload["rating"]
+
+
+def test_update_book_partial_payload(client):
+    create_response = client.post(
+        "/books",
+        json={
+            "title": "Original title",
+            "description": "Original description",
+            "link": "https://example.com/original",
+            "author": "Original author",
+            "price": 20.00,
+            "pages": 300,
+            "rating": 7.0,
+        },
+    )
+    book_id = create_response.get_json()["id"]
+
+    update_response = client.put(f"/books/{book_id}", json={"rating": 9.5})
+    updated = update_response.get_json()
+    fetched = client.get(f"/books/{book_id}").get_json()
+
+    assert update_response.status_code == 200
+    assert updated["rating"] == 9.5
+    assert updated["title"] == "Original title"
+    assert updated["author"] == "Original author"
+    assert updated["price"] == 20.00
+    assert fetched["rating"] == 9.5
+    assert fetched["title"] == "Original title"
+
+
+def test_update_book_empty_payload_returns_400(client):
+    create_response = client.post(
+        "/books",
+        json={
+            "title": "Title",
+            "description": "desc",
+            "link": "https://example.com/book",
+            "author": "Author",
+            "price": 10.0,
+            "pages": 100,
+            "rating": 5.0,
+        },
+    )
+    book_id = create_response.get_json()["id"]
+
+    response = client.put(f"/books/{book_id}", json={})
+
+    assert response.status_code == 400
+    assert "At least one updatable field" in response.get_json()["message"]
